@@ -1,0 +1,13 @@
+amends "pkl:Project"
+
+dependencies {
+  ["com.github.actions"] {
+    uri = "package://pkg.pkl-lang.org/pkl-pantry/com.github.actions@1.9.0"
+  }
+  ["com.github.dependabot"] {
+    uri = "package://pkg.pkl-lang.org/pkl-pantry/com.github.dependabot@1.1.0"
+  }
+  ["pkl.github.dependabotManagedActions"] {
+    uri = "package://pkg.pkl-lang.org/pkl-pantry/pkl.github.dependabotManagedActions@1.1.10"
+  }
+}

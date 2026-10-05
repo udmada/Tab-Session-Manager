@@ -1,0 +1,23 @@
+# This is a fake workflow that never runs.
+# It's used to pin actions to specific git SHAs when generating actual workflows.
+# It also gets updated by dependabot (see .github/dependabot.yml).
+# Generated from Workflow.pkl. DO NOT EDIT.
+name: __lockfile__
+'on':
+  push:
+    branches-ignore:
+    - '**'
+    tags-ignore:
+    - '**'
+permissions: {}
+jobs:
+  locks:
+    if: 'false'
+    runs-on: nothing
+    steps:
+    - name: actions/checkout@v6
+      uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+    - name: actions/upload-artifact@v7
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - name: jdx/mise-action@v4
+      uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4

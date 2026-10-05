@@ -1,0 +1,21 @@
+[tools]
+node = "24"
+pkl = "latest"
+
+[tasks.build]
+description = "Production build of the Chrome and Firefox zips into dist/ (needs src/credentials.js)"
+run = "npm run build"
+
+[tasks."build:xpi"]
+description = "Copy the unsigned Firefox zip to dist/tab-session-manager-unsigned.xpi"
+depends = ["build"]
+run = "cp dist/tab_session_manager-for-firefox-*.zip dist/tab-session-manager-unsigned.xpi"
+
+[tasks."sign:xpi"]
+description = "Sign the Firefox build as an unlisted AMO add-on (needs WEB_EXT_API_KEY and WEB_EXT_API_SECRET in env)"
+depends = ["build"]
+run = "npx --yes web-ext@10.7.0 sign --source-dir temp/firefox --channel unlisted --artifacts-dir dist/signed"
+
+[tasks."pkl:gen"]
+description = "Generate GitHub Actions YAML from pkl sources"
+run = "pkl eval -m .github/ --project-dir .github/pkl .github/pkl/index.pkl"

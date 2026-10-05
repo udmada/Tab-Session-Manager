@@ -1,0 +1,90 @@
+amends "@com.github.actions/Workflow.pkl"
+import "@com.github.actions/catalog.pkl"
+import "@com.github.actions/Step.pkl"
+
+import "common.pkl"
+
+name = "Release XPI"
+
+// Manual only: run it from the Actions tab to bump the version, build and sign the XPI, commit the
+// bump back, tag it and publish a GitHub release. It never runs on push, so ordinary commits don't
+// create signed versions on Mozilla's side. The bump commit is pushed with GITHUB_TOKEN and carries
+// [skip ci], and the job also ignores the bot, so it can't trigger CI or loop.
+on {
+  workflow_dispatch {
+    inputs {
+      ["bump"] {
+        description = "Version bump"
+        type = "choice"
+        default = "patch"
+        options { "patch"; "minor"; "major" }
+      }
+    }
+  }
+}
+
+permissions {
+  contents = "write"
+}
+
+concurrency {
+  group = "release"
+  `cancel-in-progress` = false
+}
+
+jobs {
+  ["release"] {
+    `if` = "github.actor != 'github-actions[bot]'"
+    `runs-on` = "ubuntu-latest"
+    `timeout-minutes` = 30
+    steps = (common.steps) {
+      (Step) {
+        id = "bump"
+        name = "Bump version"
+        env {
+          ["BUMP"] = "${{ inputs.bump || 'patch' }}"
+        }
+        run = "echo \"version=$(node scripts/bump-version.mjs \"$BUMP\")\" >> \"$GITHUB_OUTPUT\""
+      }
+      (Step) {
+        name = "Build and sign XPI"
+        env {
+          ["WEB_EXT_API_KEY"] = "${{ secrets.WEB_EXT_API_KEY }}"
+          ["WEB_EXT_API_SECRET"] = "${{ secrets.WEB_EXT_API_SECRET }}"
+        }
+        run = "mise run sign:xpi"
+      }
+      (catalog.`actions/upload-artifact@v7`) {
+        with {
+          name = "tab-session-manager-firefox-signed"
+          path = "dist/signed/*.xpi"
+          `if-no-files-found` = "error"
+        }
+      }
+      // Only after signing succeeded, so a failed run doesn't leave a bump commit or tag behind.
+      (Step) {
+        name = "Commit version bump and tag"
+        env {
+          ["VERSION"] = "${{ steps.bump.outputs.version }}"
+        }
+        run =
+          """
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/manifest.json src/manifest-ff.json
+          git commit -m "chore(release): v$VERSION [skip ci]"
+          git tag "v$VERSION"
+          git push origin "HEAD:${{ github.ref_name }}" "v$VERSION"
+          """
+      }
+      (Step) {
+        name = "Publish GitHub release"
+        env {
+          ["GH_TOKEN"] = "${{ github.token }}"
+          ["VERSION"] = "${{ steps.bump.outputs.version }}"
+        }
+        run = "gh release create \"v$VERSION\" dist/signed/*.xpi --generate-notes"
+      }
+    }
+  }
+}

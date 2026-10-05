@@ -1,0 +1,19 @@
+amends "@pkl.github.dependabotManagedActions/DependabotManagedActions.pkl"
+
+workflows {
+  ["workflows/ci.yml"] = import("../pkl/ci.pkl")
+  ["workflows/release.yml"] = import("../pkl/release.pkl")
+}
+
+dependabot {
+  updates {
+    new {
+      `package-ecosystem` = "npm"
+      directory = "/"
+      schedule {
+        interval = "weekly"
+        timezone = "Pacific/Auckland"
+      }
+    }
+  }
+}
