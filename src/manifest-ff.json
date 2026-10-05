@@ -19,7 +19,7 @@
     "identity",
     "alarms"
   ],
-  "optional_permissions": ["https://www.googleapis.com/*"],
+  "optional_permissions": ["https://www.googleapis.com/*", "https://*/*", "http://*/*"],
   "options_ui": {
     "page": "options/index.html",
     "open_in_tab": true
