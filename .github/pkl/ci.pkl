@@ -1,0 +1,45 @@
+amends "@com.github.actions/Workflow.pkl"
+import "@com.github.actions/catalog.pkl"
+import "@com.github.actions/Step.pkl"
+
+import "common.pkl"
+
+name = "CI"
+
+// Machine commits (the release bot's version bump) are skipped: by [skip ci] in the commit message
+// and by the actor guard on each job.
+
+on {
+  push {}
+  pull_request {}
+}
+
+jobs {
+  ["check"] {
+    `if` = "github.actor != 'github-actions[bot]'"
+    `runs-on` = "ubuntu-latest"
+    steps = (common.steps) {
+      (Step) {
+        name = "Verify pkl gen is up to date"
+        run = "mise run pkl:gen && git diff --exit-code .github/"
+      }
+    }
+  }
+  ["build"] {
+    `if` = "github.actor != 'github-actions[bot]'"
+    `runs-on` = "ubuntu-latest"
+    steps = (common.steps) {
+      (Step) {
+        name = "Build unsigned XPI"
+        run = "mise run build:xpi"
+      }
+      (catalog.`actions/upload-artifact@v7`) {
+        with {
+          name = "tab-session-manager-firefox-unsigned"
+          path = "dist/tab-session-manager-unsigned.xpi"
+          `if-no-files-found` = "error"
+        }
+      }
+    }
+  }
+}

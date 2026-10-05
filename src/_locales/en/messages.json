@@ -516,7 +516,7 @@
     "message": "Enable cloud sync (Beta)"
   },
   "enabledCloudSyncCaptionLabel": {
-    "message": "Save sessions to Google Drive™ and sync with other computers."
+    "message": "Save sessions to Google Drive™, WebDAV or S3-compatible storage and sync with other computers."
   },
   "syncingLabel": {
     "message": "Syncing"
@@ -805,5 +805,74 @@
   },
   "copiedLabel": {
     "message": "Copied."
+  },
+  "cloudProviderGoogleLabel": {
+    "message": "Google Drive™"
+  },
+  "cloudProviderWebdavLabel": {
+    "message": "WebDAV"
+  },
+  "cloudProviderS3Label": {
+    "message": "S3-compatible storage"
+  },
+  "webdavUrlLabel": {
+    "message": "WebDAV URL"
+  },
+  "webdavUsernameLabel": {
+    "message": "Username"
+  },
+  "webdavPasswordLabel": {
+    "message": "Password"
+  },
+  "webdavFolderLabel": {
+    "message": "Folder"
+  },
+  "s3EndpointLabel": {
+    "message": "Endpoint URL"
+  },
+  "s3RegionLabel": {
+    "message": "Region"
+  },
+  "s3BucketLabel": {
+    "message": "Bucket"
+  },
+  "s3AccessKeyIdLabel": {
+    "message": "Access key ID"
+  },
+  "s3SecretAccessKeyLabel": {
+    "message": "Secret access key"
+  },
+  "s3PrefixLabel": {
+    "message": "Key prefix"
+  },
+  "s3PathStyleLabel": {
+    "message": "Use path-style URLs"
+  },
+  "s3KeepArchiveLabel": {
+    "message": "Keep previous versions in archive/ (latest 5 per session)"
+  },
+  "cloudTestConnectionLabel": {
+    "message": "Test connection"
+  },
+  "cloudConnectLabel": {
+    "message": "Connect"
+  },
+  "cloudDisconnectLabel": {
+    "message": "Disconnect"
+  },
+  "cloudInvalidUrlLabel": {
+    "message": "Invalid URL."
+  },
+  "cloudPermissionDeniedLabel": {
+    "message": "Permission to access the server was not granted."
+  },
+  "cloudTestSucceededLabel": {
+    "message": "Connection succeeded."
+  },
+  "cloudTestFailedLabel": {
+    "message": "Connection failed."
+  },
+  "cloudConnectFailedLabel": {
+    "message": "Could not connect. Check the settings and try again."
   }
 }

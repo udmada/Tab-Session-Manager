@@ -1,6 +1,6 @@
 import browser from "webextension-polyfill";
 import browserInfo from "browser-info";
-import SignInButton from "../options/components/SignInButton";
+import CloudProviderForm from "../options/components/CloudProviderForm";
 import CompressAllSessionsForm from "../options/components/CompressAllSessionsForm";
 import { isEnabledTabGroups, handleSaveTabGroupsChange } from "../common/tabGroups";
 
@@ -294,7 +294,7 @@ export default [
         title: "enabledCloudSyncLabel",
         captions: ["enabledCloudSyncCaptionLabel"],
         type: "extra",
-        extraForm: SignInButton,
+        extraForm: CloudProviderForm,
         childElements: [
           {
             id: "enabledAutoSync",
@@ -311,6 +311,84 @@ export default [
             default: true
           }
         ]
+      },
+      {
+        id: "cloudProvider",
+        type: "none",
+        default: "google",
+        shouldShow: false
+      },
+      {
+        id: "webdavUrl",
+        type: "none",
+        default: "",
+        shouldShow: false
+      },
+      {
+        id: "webdavUsername",
+        type: "none",
+        default: "",
+        shouldShow: false
+      },
+      {
+        id: "webdavPassword",
+        type: "none",
+        default: "",
+        shouldShow: false
+      },
+      {
+        id: "webdavFolder",
+        type: "none",
+        default: "TabSessionManager",
+        shouldShow: false
+      },
+      {
+        id: "s3Endpoint",
+        type: "none",
+        default: "",
+        shouldShow: false
+      },
+      {
+        id: "s3Region",
+        type: "none",
+        default: "",
+        shouldShow: false
+      },
+      {
+        id: "s3Bucket",
+        type: "none",
+        default: "",
+        shouldShow: false
+      },
+      {
+        id: "s3AccessKeyId",
+        type: "none",
+        default: "",
+        shouldShow: false
+      },
+      {
+        id: "s3SecretAccessKey",
+        type: "none",
+        default: "",
+        shouldShow: false
+      },
+      {
+        id: "s3PathStyle",
+        type: "none",
+        default: true,
+        shouldShow: false
+      },
+      {
+        id: "s3Prefix",
+        type: "none",
+        default: "TabSessionManager/",
+        shouldShow: false
+      },
+      {
+        id: "s3KeepArchive",
+        type: "none",
+        default: false,
+        shouldShow: false
       }
     ]
   },

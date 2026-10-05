@@ -97,6 +97,15 @@ export const importSettings = async e => {
   reader.readAsText(file);
 };
 
+// credentials and connection state must not be written to or restored from exported files
+const excludedSettingsIds = [
+  "signedInEmail",
+  "webdavUsername",
+  "webdavPassword",
+  "s3AccessKeyId",
+  "s3SecretAccessKey"
+];
+
 const getSettingsIds = () => {
   let settingsIds = [];
   defaultSettings.forEach(category => {
@@ -111,5 +120,5 @@ const getSettingsIds = () => {
       }
     });
   });
-  return settingsIds;
+  return settingsIds.filter(id => !excludedSettingsIds.includes(id));
 };

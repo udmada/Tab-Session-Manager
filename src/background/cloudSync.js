@@ -2,8 +2,7 @@ import browser from "webextension-polyfill";
 import log from "loglevel";
 import { getSettings, setSettings } from "../settings/settings";
 import getSessions from "./getSessions";
-import { listFiles, uploadSession, downloadFile, deleteFile } from "./cloudAPIs";
-import { refreshAccessToken } from "./cloudAuth";
+import { getProvider } from "./cloudProviders";
 import { saveSession, updateSession } from "./save";
 import { showSyncErrorBadge, hideBadge } from "./setBadge";
 
@@ -108,49 +107,56 @@ export const syncCloud = async () => {
   log.log(logDir, "syncCloud()");
   hideBadge();
 
-  updateSyncStatus(syncStatus.pending);
-  const files = await listFiles().catch(e => null);
-  if (files === null) {
-    log.error(logDir, "syncCloud() listFiles");
-    isSyncing = false;
+  try {
+    updateSyncStatus(syncStatus.pending);
+    const provider = getProvider();
+    const files = await provider.listFiles().catch(e => null);
+    if (files === null) {
+      log.error(logDir, "syncCloud() listFiles");
+      updateSyncStatus(syncStatus.none);
+      return;
+    }
+    const sessions = (await getSessions()).filter(session => !session.tag.includes("temp"));
+    const removedQueue = getSettings("removedQueue") || [];
+
+    const lastSyncTime = getSettings("lastSyncTime") || 0;
+    const currentTime = Date.now();
+
+    const shouldRemoveFiles = getShouldRemoveFiles(files, sessions, removedQueue);
+    const shouldDownloadFiles = getShouldDownloadFiles(files, sessions, shouldRemoveFiles);
+    const shouldUploadSessions = getShouldUploadSessions(files, sessions, lastSyncTime);
+
+    for (const [index, file] of shouldDownloadFiles.entries()) {
+      updateSyncStatus(syncStatus.download, index + 1, shouldDownloadFiles.length);
+      const downloadedSession = await provider.downloadFile(file.id);
+      const isUpdate = sessions.some(session => session.id === downloadedSession.id);
+      if (isUpdate) updateSession(downloadedSession, true, false, true);
+      else saveSession(downloadedSession, true, true);
+    }
+
+    for (const [index, session] of shouldUploadSessions.entries()) {
+      updateSyncStatus(syncStatus.upload, index + 1, shouldUploadSessions.length);
+      const sameIdFile = files.find(file => file.name === session.id);
+      if (sameIdFile) await provider.uploadSession(session, sameIdFile.id);
+      else await provider.uploadSession(session);
+    }
+
+    for (const [index, file] of shouldRemoveFiles.entries()) {
+      updateSyncStatus(syncStatus.delete, index + 1, shouldRemoveFiles.length);
+      await provider.deleteFile(file.id);
+    }
+
+    setSettings("lastSyncTime", currentTime);
+    setSettings("removedQueue", []);
+    updateSyncStatus(syncStatus.complete);
     updateSyncStatus(syncStatus.none);
-    return;
+  } catch (e) {
+    log.error(logDir, "syncCloud()", e);
+    updateSyncStatus(syncStatus.none);
+    showSyncErrorBadge();
+  } finally {
+    isSyncing = false;
   }
-  const sessions = (await getSessions()).filter(session => !session.tag.includes("temp"));
-  const removedQueue = getSettings("removedQueue") || [];
-
-  const lastSyncTime = getSettings("lastSyncTime") || 0;
-  const currentTime = Date.now();
-
-  const shouldRemoveFiles = getShouldRemoveFiles(files, sessions, removedQueue);
-  const shouldDownloadFiles = getShouldDownloadFiles(files, sessions, shouldRemoveFiles);
-  const shouldUploadSessions = getShouldUploadSessions(files, sessions, lastSyncTime);
-
-  for (const [index, file] of shouldDownloadFiles.entries()) {
-    updateSyncStatus(syncStatus.download, index + 1, shouldDownloadFiles.length);
-    const downloadedSession = await downloadFile(file.id);
-    const isUpdate = sessions.some(session => session.id === downloadedSession.id);
-    if (isUpdate) updateSession(downloadedSession, true, false, true);
-    else saveSession(downloadedSession, true, true);
-  }
-
-  for (const [index, session] of shouldUploadSessions.entries()) {
-    updateSyncStatus(syncStatus.upload, index + 1, shouldUploadSessions.length);
-    const sameIdFile = files.find(file => file.name === session.id);
-    if (sameIdFile) await uploadSession(session, sameIdFile.id);
-    else await uploadSession(session);
-  }
-
-  for (const [index, file] of shouldRemoveFiles.entries()) {
-    updateSyncStatus(syncStatus.delete, index + 1, shouldRemoveFiles.length);
-    await deleteFile(file.id);
-  }
-
-  setSettings("lastSyncTime", currentTime);
-  setSettings("removedQueue", []);
-  isSyncing = false;
-  updateSyncStatus(syncStatus.complete);
-  updateSyncStatus(syncStatus.none);
 };
 
 export const pushRemovedQueue = id => {
@@ -174,7 +180,7 @@ export const syncCloudAuto = () => {
   autoSyncTimer = setTimeout(async () => {
     try {
       //Check sign in required
-      await refreshAccessToken(false);
+      await getProvider().ensureAuthorized(false);
       syncCloud();
     } catch (e) {
       log.error(logDir, "syncCloudAuto()", "Sign in Required");

@@ -1,0 +1,35 @@
+import "@com.github.actions/AbstractTypedStep.pkl"
+import "@com.github.actions/catalog.pkl"
+import "@com.github.actions/Step.pkl"
+
+import "actions/MiseAction.pkl"
+
+steps: Listing<*Step | AbstractTypedStep> = new Listing {
+  (catalog.`actions/checkout@v6`) {
+    with {
+      `fetch-depth` = 1
+    }
+  }
+  (MiseAction) {
+    with {
+      experimental = true
+    }
+  }
+  (Step) {
+    name = "Install dependencies"
+    run = "npm ci"
+  }
+  // src/credentials.js is gitignored. Google OAuth only works when the secrets are set; WebDAV and
+  // S3 sync don't need them, so fall back to placeholders and keep the build green.
+  (Step) {
+    name = "Write src/credentials.js"
+    env {
+      ["GOOGLE_CLIENT_ID"] = "${{ secrets.GOOGLE_CLIENT_ID }}"
+      ["GOOGLE_CLIENT_SECRET"] = "${{ secrets.GOOGLE_CLIENT_SECRET }}"
+    }
+    run =
+      """
+      printf 'export const clientId = "%s";\\nexport const clientSecret = "%s";\\n' "${GOOGLE_CLIENT_ID:-xxx}" "${GOOGLE_CLIENT_SECRET:-xxx}" > src/credentials.js
+      """
+  }
+}

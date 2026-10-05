@@ -28,13 +28,19 @@ import {
 import getSessions from "./getSessions";
 import { openSession } from "./open";
 import { addTag, removeTag, applyDeviceName } from "./tag";
-import { initSettings, handleSettingsChange, getSettings } from "src/settings/settings";
+import {
+  initSettings,
+  handleSettingsChange,
+  getSettings,
+  setSettings
+} from "src/settings/settings";
 import exportSessions, { handleDownloadsChanged } from "./export";
 import onInstalledListener from "./onInstalledListener";
 import onUpdateAvailableListener from "./onUpdateAvailableListener";
 import { onCommandListener } from "./keyboardShortcuts";
 import { openStartupSessions } from "./startup";
 import { signInGoogle, signOutGoogle } from "./cloudAuth";
+import { getProviderByName } from "./cloudProviders";
 import { syncCloud, syncCloudAuto, getSyncStatus } from "./cloudSync";
 import { updateLogLevel, overWriteLogLevel } from "../common/log";
 import { getsearchInfo } from "./search";
@@ -43,6 +49,85 @@ import { compressAllSessions } from "./compressAllSessions";
 import { startTracking, endTrackingByWindowDelete, updateTrackingStatus } from "./track";
 
 const logDir = "background/background";
+
+const cloudConfigKeys = {
+  webdav: ["webdavUrl", "webdavUsername", "webdavPassword", "webdavFolder"],
+  s3: [
+    "s3Endpoint",
+    "s3Region",
+    "s3Bucket",
+    "s3AccessKeyId",
+    "s3SecretAccessKey",
+    "s3PathStyle",
+    "s3Prefix",
+    "s3KeepArchive"
+  ]
+};
+const cloudCredentialKeys = [
+  "webdavUsername",
+  "webdavPassword",
+  "s3AccessKeyId",
+  "s3SecretAccessKey"
+];
+
+const getCloudLabel = (provider, config) => {
+  if (provider === "webdav") {
+    try {
+      return new URL(config.webdavUrl).host || config.webdavUrl;
+    } catch {
+      return config.webdavUrl;
+    }
+  }
+  return config.s3Bucket;
+};
+
+const connectCloud = async (provider, config = {}) => {
+  log.log(logDir, "connectCloud()", provider);
+  if (!cloudConfigKeys[provider]) return false;
+  const previous = {};
+  for (const key of ["cloudProvider", ...cloudConfigKeys[provider]])
+    previous[key] = getSettings(key);
+  try {
+    for (const key of cloudConfigKeys[provider]) {
+      if (config[key] !== undefined) await setSettings(key, config[key]);
+    }
+    await setSettings("cloudProvider", provider);
+    await getProviderByName(provider).testConnection(config);
+    await setSettings("signedInEmail", getCloudLabel(provider, config));
+    await setSettings("lastSyncTime", 0);
+    await setSettings("removedQueue", []);
+    return true;
+  } catch (e) {
+    log.error(logDir, "connectCloud()", e);
+    for (const key of Object.keys(previous)) await setSettings(key, previous[key]);
+    return false;
+  }
+};
+
+const disconnectCloud = async () => {
+  log.log(logDir, "disconnectCloud()");
+  try {
+    const provider = getSettings("cloudProvider");
+    if (provider === "google") return await signOutGoogle();
+    for (const key of cloudCredentialKeys) await setSettings(key, "");
+    await setSettings("signedInEmail", "");
+    await setSettings("lastSyncTime", 0);
+    await setSettings("removedQueue", []);
+    return true;
+  } catch (e) {
+    log.error(logDir, "disconnectCloud()", e);
+    return false;
+  }
+};
+
+const testCloudConnection = async (provider, config = {}) => {
+  try {
+    await getProviderByName(provider).testConnection(config);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e?.message || String(e) };
+  }
+};
 
 let IsInit = false;
 export const init = async () => {
@@ -137,6 +222,12 @@ const onMessageListener = async (request, sender, sendResponse) => {
       return await signInGoogle();
     case "signOutGoogle":
       return await signOutGoogle();
+    case "connectCloud":
+      return await connectCloud(request.provider, request.config);
+    case "disconnectCloud":
+      return await disconnectCloud();
+    case "testCloudConnection":
+      return await testCloudConnection(request.provider, request.config);
     case "syncCloud":
       return await syncCloud();
     case "getSyncStatus":

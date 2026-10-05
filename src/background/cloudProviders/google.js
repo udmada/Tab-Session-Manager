@@ -1,10 +1,10 @@
 import log from "loglevel";
-import { refreshAccessToken } from "./cloudAuth";
-import { sliceTextByBytes } from "../common/sliceTextByBytes";
+import { refreshAccessToken } from "../cloudAuth";
+import { sliceTextByBytes } from "../../common/sliceTextByBytes";
 
-const logDir = "background/cloudAPIs";
+const logDir = "background/cloudProviders/google";
 
-export const listFiles = async (pageToken = "") => {
+const listFiles = async (pageToken = "") => {
   log.log(logDir, "listFiles()");
   const accessToken = await refreshAccessToken();
   const params = {
@@ -40,7 +40,7 @@ export const listFiles = async (pageToken = "") => {
   }
 };
 
-export const uploadSession = async (session, fileId = "") => {
+const uploadSession = async (session, fileId = "") => {
   log.log(logDir, "uploadSession()", session, fileId);
   const metadata = {
     name: session.id,
@@ -77,7 +77,7 @@ export const uploadSession = async (session, fileId = "") => {
   log.log(logDir, "=>uploadSession()", resultJson);
 };
 
-export const downloadFile = async fileId => {
+const downloadFile = async fileId => {
   log.log(logDir, "downloadFile()", fileId);
   const accessToken = await refreshAccessToken();
   const params = { alt: "media" };
@@ -96,7 +96,7 @@ export const downloadFile = async fileId => {
   }
 };
 
-export const deleteAllFiles = async () => {
+const deleteAllFiles = async () => {
   log.log(logDir, "deleteAllFiles()");
   const files = await listFiles();
   for (let file of files) {
@@ -104,7 +104,7 @@ export const deleteAllFiles = async () => {
   }
 };
 
-export const deleteFile = async fileId => {
+const deleteFile = async fileId => {
   log.log(logDir, "deleteFiles()", fileId);
   const accessToken = await refreshAccessToken();
   const url = `https://www.googleapis.com/drive/v3/files/${fileId}`;
@@ -116,4 +116,19 @@ export const deleteFile = async fileId => {
     log.error(logDir, "deleteFiles()", e.response);
     throw new Error();
   }
+};
+
+const ensureAuthorized = async (interactive = true) => {
+  await refreshAccessToken(interactive);
+};
+
+const testConnection = async () => {};
+
+export default {
+  listFiles,
+  uploadSession,
+  downloadFile,
+  deleteFile,
+  ensureAuthorized,
+  testConnection
 };
