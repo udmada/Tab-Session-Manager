@@ -11,6 +11,7 @@ export const signInGoogle = async () => {
     const authCode = await getAuthCode();
     const { accessToken, expiresIn, refreshToken } = await getRefreshTokens(authCode);
     const email = await getEmail(accessToken);
+    setSettings("cloudProvider", "google");
     setSettings("signedInEmail", email);
     setSettings("accessToken", accessToken);
     setSettings("refreshToken", refreshToken);
