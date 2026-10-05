@@ -47,7 +47,7 @@
     "sass-loader": "^14.2.1",
     "webpack": "^5.88.2",
     "webpack-cli": "^4.8.0",
-    "zip-webpack-plugin": "^4.0.1"
+    "zip-webpack-plugin": "^4.0.3"
   },
   "scripts": {
     "watch-dev": "webpack --config webpack.config.dev.js --watch",
