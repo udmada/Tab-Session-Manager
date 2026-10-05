@@ -12,9 +12,13 @@ depends = ["build"]
 run = "cp dist/tab_session_manager-for-firefox-*.zip dist/tab-session-manager-unsigned.xpi"
 
 [tasks."sign:xpi"]
-description = "Sign the Firefox build as an unlisted AMO add-on (needs WEB_EXT_API_KEY and WEB_EXT_API_SECRET in env)"
+description = "Sign the Firefox build as an unlisted AMO add-on and name it tab-session-manager-sync-<version>.xpi (needs WEB_EXT_API_KEY and WEB_EXT_API_SECRET in env)"
 depends = ["build"]
-run = "npx --yes web-ext@10.7.0 sign --source-dir temp/firefox --channel unlisted --artifacts-dir dist/signed"
+run = """
+npx --yes web-ext@10.7.0 sign --source-dir temp/firefox --channel unlisted --artifacts-dir dist/signed
+version=$(node -p "require('./src/manifest-ff.json').version")
+mv dist/signed/*.xpi "dist/signed/tab-session-manager-sync-$version.xpi"
+"""
 
 [tasks."pkl:gen"]
 description = "Generate GitHub Actions YAML from pkl sources"
